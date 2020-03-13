@@ -1,0 +1,52 @@
+import ssl
+from librouteros import connect
+from librouteros.query import Key
+import string
+import random
+
+class mikrotik:
+    def __init__(self,mHost,mUsername,mPassword,mPort):
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.set_ciphers('ADH:@SECLEVEL=0')
+        self.api = connect(
+            username=mUsername,
+            password=mPassword,
+            host=mHost,
+            ssl_wrapper=ctx.wrap_socket,
+            port=mPort
+        )
+        print('init mikrotik')
+    def removeCoupon(self,coupon):
+        ip = self.api.path('ip')
+        hotspot = ip.join('hotspot')
+        user = hotspot.join('user')
+        _id = Key('.id')
+        name = Key('name')
+        key = list()
+        for item in coupon:
+            result = list(user.select(_id,name).where(name==item[2]))
+            if(len(result)>0):
+                user.remove(result[0]['.id'])
+            else:
+                print('not found')
+        
+        print("remove Coupon")
+        
+    def coupon_generator(self,size=6, chars=string.ascii_uppercase + string.digits):
+        print("Generate User Pass Coupon")
+        return [''.join(random.choice(chars) for _ in range(size)),''.join(random.choice(chars) for _ in range(size))]
+    
+    def addCoupons(self,value):
+        ip = self.api.path('ip')
+        hotspot = ip.join('hotspot')
+        user = hotspot.join('user')
+        name = Key('name')
+        result = list(user.select(name).where(name==value[0]))
+        if(len(result)>0):
+            return False
+        else:
+            user.add(name=value[0],password=value[1],profile='forPython')
+            return True
+                
+        #path.add(name=value[0],
